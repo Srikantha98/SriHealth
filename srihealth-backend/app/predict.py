@@ -4,7 +4,7 @@ from PIL import Image
 import os
 
 # ----------------- Model Setup -----------------
-MODEL_PATH = os.path.join("model", "best_model.pth")  # Path to your trained PyTorch model
+MODEL_PATH = os.path.join("model", "addnet_model.pth")  # Path to your trained PyTorch model
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the trained model
