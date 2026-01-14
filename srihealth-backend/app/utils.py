@@ -1,28 +1,45 @@
 import os
-import uuid
+from fastapi import UploadFile
+from uuid import uuid4
 
-# ----------------- File Utilities -----------------
+# Directory for temporary MRI uploads
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def save_upload_file(upload_file, upload_dir="uploads") -> str:
+# -------------------------------
+# Save uploaded file
+# -------------------------------
+def save_uploaded_file(file: UploadFile) -> str:
     """
-    Save an uploaded file to the uploads directory with a unique filename.
-    Returns the saved file path.
-    """
-    os.makedirs(upload_dir, exist_ok=True)
-    # Create unique filename to avoid conflicts
-    ext = os.path.splitext(upload_file.filename)[1]
-    unique_filename = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(upload_dir, unique_filename)
+    Saves an uploaded FastAPI file to the uploads directory.
 
+    Args:
+        file (UploadFile): FastAPI uploaded file
+
+    Returns:
+        str: Path to saved file
+    """
+    # Create unique filename
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    # Save file
     with open(file_path, "wb") as f:
-        f.write(upload_file.file.read())
+        f.write(file.file.read())
+    file.file.close()
 
     return file_path
 
-
-def remove_file(file_path: str):
+# -------------------------------
+# Delete a file
+# -------------------------------
+def delete_file(file_path: str):
     """
-    Delete a file from the system if it exists.
+    Deletes a file from disk if it exists.
+
+    Args:
+        file_path (str): Path to the file
     """
     if os.path.exists(file_path):
         os.remove(file_path)

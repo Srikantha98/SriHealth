@@ -1,27 +1,42 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from typing import List, Dict
+from datetime import datetime
 
-# ----------------- Database Configuration -----------------
-# SQLite for demo; you can switch to PostgreSQL/MySQL by changing DATABASE_URL
-DATABASE_URL = "sqlite:///./alzheimers.db"
+# -------------------------------
+# In-memory "database" collections
+# -------------------------------
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}  # Needed for SQLite
-)
+# Stores user info
+# Example: {"email": "user@example.com", "password": "hashedpassword", "created_at": datetime}
+users_collection: List[Dict] = []
 
-# Create a configured "Session" class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Stores prediction history
+# Example: {"user": "user@example.com", "prediction": "Mild Dementia", "confidence": 0.92, "created_at": datetime}
+predictions_collection: List[Dict] = []
 
-# Base class for all models
-Base = declarative_base()
+# -------------------------------
+# Optional helper functions
+# -------------------------------
 
-# ----------------- Dependency -----------------
-# Use this in FastAPI routes to get a DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def add_user(email: str, hashed_password: str):
+    users_collection.append({
+        "email": email,
+        "password": hashed_password,
+        "created_at": datetime.utcnow()
+    })
+
+def find_user(email: str):
+    for user in users_collection:
+        if user["email"] == email:
+            return user
+    return None
+
+def add_prediction(user_email: str, prediction: str, confidence: float):
+    predictions_collection.append({
+        "user": user_email,
+        "prediction": prediction,
+        "confidence": confidence,
+        "created_at": datetime.utcnow()
+    })
+
+def get_user_predictions(user_email: str):
+    return [p for p in predictions_collection if p["user"] == user_email]

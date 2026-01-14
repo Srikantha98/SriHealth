@@ -1,36 +1,40 @@
+# app/schemas.py
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
-# ----------------- User Schemas -----------------
-
-class UserCreate(BaseModel):
-    username: str
+# -------------------------------
+# User Registration Request
+# -------------------------------
+class UserRegister(BaseModel):
     email: EmailStr
     password: str
 
-class UserResponse(BaseModel):
-    id: int
-    username: str
+# -------------------------------
+# User Login Request
+# -------------------------------
+class UserLogin(BaseModel):
     email: EmailStr
-    created_at: str  # ISO datetime string
+    password: str
 
-    class Config:
-        orm_mode = True
-
-# ----------------- Auth / Token Schemas -----------------
-
+# -------------------------------
+# JWT Token Response
+# -------------------------------
 class Token(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = "bearer"
 
-class TokenData(BaseModel):
-    user_id: int | None = None
-
-# ----------------- Prediction Schemas -----------------
-
+# -------------------------------
+# Prediction Response
+# -------------------------------
 class PredictionResponse(BaseModel):
-    filename: str
-    predicted_class: str
-    created_at: str
+    prediction: str
+    confidence: float
 
-    class Config:
-        orm_mode = True
+# -------------------------------
+# Prediction History Item
+# -------------------------------
+class PredictionHistoryItem(BaseModel):
+    user: str
+    prediction: str
+    confidence: float
+    created_at: datetime  # datetime object for proper handling

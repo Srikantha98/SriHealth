@@ -1,41 +1,53 @@
+# app/predict.py
 import torch
-from torchvision import transforms
 from PIL import Image
-import os
+import torchvision.transforms as transforms
+from app.model import addnet_model, device, N_CLASSES
 
-# ----------------- Model Setup -----------------
-MODEL_PATH = os.path.join("model", "best_model.pth")  # Path to your trained PyTorch model
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Class names (must match the order used during training)
+CLASS_NAMES = ['Mild Dementia', 'Moderate Dementia', 'Non Demented', 'Very mild Dementia']
 
-# Load the trained model
-model = torch.load(MODEL_PATH, map_location=DEVICE)
-model.eval()  # Set model to evaluation mode
-
-# Define image preprocessing
+# -------------------------------
+# Preprocessing transforms
+# -------------------------------
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # Adjust size based on your model input
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],  # Standard ImageNet normalization
-                         std=[0.229, 0.224, 0.225])
+    transforms.Resize((128, 128)),  # Resize to match model input
+    transforms.ToTensor(),           # Convert to tensor
+    transforms.Normalize([0.5], [0.5])  # Normalize grayscale image
 ])
 
-# ----------------- Prediction Function -----------------
-def predict_mri(image_path: str) -> str:
+# -------------------------------
+# Predict function
+# -------------------------------
+def predict_mri(file_path: str) -> dict:
     """
-    Takes an MRI image path, preprocesses it, and returns the predicted Alzheimer's stage.
+    Predicts the Alzheimer stage from a single MRI image.
+
+    Args:
+        file_path (str): Path to the MRI image.
+
+    Returns:
+        dict: {
+            "prediction": str,
+            "confidence": float
+        }
     """
-    # Open image
-    image = Image.open(image_path).convert("RGB")
-    
-    # Apply transforms and add batch dimension
-    input_tensor = transform(image).unsqueeze(0).to(DEVICE)
-    
+    # Load image in grayscale
+    img = Image.open(file_path).convert("L")
+    img = transform(img).unsqueeze(0)  # Add batch dimension
+    img = img.to(device)
+
+    # Set model to evaluation mode
+    addnet_model.eval()
+
     # Model inference
     with torch.no_grad():
-        outputs = model(input_tensor)
-        _, predicted = torch.max(outputs, 1)
-    
-    # Map prediction to class names
-    classes = ["MildDemented", "ModerateDemented", "NonDemented", "VeryMildDemented"]
-    
-    return classes[predicted.item()]
+        outputs = addnet_model(img)
+        probabilities = torch.softmax(outputs, dim=1).cpu().numpy()[0]
+        class_idx = int(probabilities.argmax())
+        confidence = float(probabilities[class_idx])
+
+    return {
+        "prediction": CLASS_NAMES[class_idx],
+        "confidence": round(confidence, 4)
+    }
